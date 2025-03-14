@@ -1,0 +1,530 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 262 83% 63%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262 83% 63%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 262 83% 63%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 262 83% 63%;
+    
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ================ Core Layout Fixes ================ */
+html, body, #root {
+  height: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Set proper container for fixed height */
+.main-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ensure content is scrollable but contained */
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  scrollbar-width: thin;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fix for iOS safari viewport height issues */
+@supports (-webkit-touch-callout: none) {
+  .main-container {
+    height: -webkit-fill-available;
+  }
+  
+  body, html {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Prevent overlay issues with fixed elements */
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(8px);
+  padding-top: env(safe-area-inset-top);
+}
+
+.fixed-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  background-color: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(8px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ================ Scanner Component Styles ================ */
+.scanner-area {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0); /* Force GPU acceleration */
+}
+
+.scan-line {
+  position: absolute;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0) 0%, rgb(139, 92, 246) 50%, rgba(139, 92, 246, 0) 100%);
+  will-change: transform;
+}
+
+/* Scanner glow effect */
+.scanner-idle-glow {
+  position: relative;
+}
+
+.scanner-idle-glow::after {
+  content: '';
+  position: absolute;
+  inset: -15px;
+  background: radial-gradient(circle, rgba(147, 51, 234, 0.2) 0%, rgba(147, 51, 234, 0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  animation: pulse-slow 3s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ================ Responsive Adjustments ================ */
+/* Responsive scanner adjustments */
+@media (max-height: 700px) {
+  .scanner-area {
+    max-height: 280px !important;
+  }
+  
+  .feature-highlights {
+    display: none;
+  }
+  
+  .help-text {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .scanner-area {
+    max-height: 220px !important;
+  }
+  
+  .recent-connections {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .action-button {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}
+
+/* Better touch handling for mobile */
+@media (hover: none) {
+  .hover-effect {
+    display: none;
+  }
+  
+  .touch-feedback:active {
+    background-color: rgba(147, 51, 234, 0.2);
+    transition: background-color 0.1s;
+  }
+}
+
+/* Fix for iOS keyboard appearance moving layout */
+input, textarea, select, button {
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+/* Ensure ambient effects don't cause overflow */
+.ambient-effect {
+  position: fixed;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ================ Animations ================ */
+/* Scan animation */
+@keyframes scan-down {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 1;
+  }
+}
+
+.animate-scan-down {
+  animation: scan-down 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Message appearing animation */
+@keyframes message-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-appear {
+  animation: message-appear 0.3s ease-out forwards;
+}
+
+/* Typing animation for chat bubbles */
+@keyframes typing {
+  0% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+}
+
+.animate-typing {
+  animation: typing 0.8s ease-in-out infinite;
+}
+
+/* Slow pulsing animation for ambient effects */
+@keyframes pulse-slow {
+  0% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+/* Float animation */
+@keyframes float-slow {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  33% {
+    transform: translateY(-15px) translateX(10px);
+  }
+  66% {
+    transform: translateY(10px) translateX(-15px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow ease-in-out infinite;
+}
+
+/* Scale in animation */
+@keyframes scale-in-center {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.scale-in-center {
+  animation: scale-in-center 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Fade in up animation for suggestions */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+/* Animation delays utility classes */
+.animation-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animation-delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* ================ Visual Effects ================ */
+/* Background grid pattern */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Glass morphism effect */
+.glass-effect {
+  background: rgba(24, 24, 27, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Brand gradient background */
+.bg-brand-gradient {
+  background: linear-gradient(to right, #a855f7, #6366f1);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, #a855f7, #818cf8);
+}
+
+/* Subtle hover effects for interactive elements */
+.hover-glow {
+  transition: all 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+/* ================ UI Component Styles ================ */
+/* Toast customization */
+/* Toast customization for better visibility on dark backgrounds */
+.dark-toast {
+  background-color: rgba(24, 24, 27, 0.95) !important;
+  border: 1px solid rgba(147, 51, 234, 0.2) !important;
+  backdrop-filter: blur(8px);
+  color: white !important;
+  opacity: 0.95 !important;
+}
+
+.dark-toast [data-toast-title] {
+  color: white !important;
+  font-weight: 500 !important;
+}
+
+.dark-toast [data-toast-description] {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Extra styles to ensure icon is visible */
+.dark-toast [data-icon] {
+  color: rgb(52, 211, 153) !important; /* text-emerald-400 equivalent */
+  opacity: 1 !important;
+}
+
+/* Sonner specific selectors - may be needed depending on your version */
+.sonner-toast[data-theme="dark"] {
+  --normal-bg: rgba(24, 24, 27, 0.95) !important;
+  --normal-border: rgba(147, 51, 234, 0.2) !important;
+  --normal-text: white !important;
+  --normal-description: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Toast positioning fix */
+.sonner-toast-container {
+  --offset: 16px;  /* Default offset from the edge */
+  --mobile-offset: 16px;  /* Default mobile offset */
+  --width: 356px;  /* Default toast width */
+  --gap: 14px;  /* Default gap between toasts */
+}
+
+/* Bottom positioning - move the toast up higher for desktop */
+/* Adjust toast position to avoid overlap with chat input */
+.sonner-toast-container[data-position^="bottom"] {
+  bottom: 80px !important; /* Increased from default (usually 16px) */
+}
+
+/* Adjust for smaller screens where the input might be larger */
+@media (max-width: 640px) {
+  .sonner-toast-container[data-position^="bottom"] {
+    bottom: 90px !important;
+  }
+  
+  /* Make toast a bit smaller on mobile */
+  .sonner-toast {
+    max-width: 90vw !important;
+  }
+}
+
+/* Only apply this if your chat interface has a different layout */
+.chat-layout .sonner-toast-container[data-position^="bottom"] {
+  bottom: 80px !important; /* Adjust based on your chat input height */
+}
+
+/* Ensure they remain visible even with keyboard open */
+@media (max-height: 500px) {
+  .sonner-toast-container[data-position^="bottom"] {
+    bottom: 70px !important;
+  }
+}
+
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(147, 51, 234, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(147, 51, 234, 0.7);
+}
