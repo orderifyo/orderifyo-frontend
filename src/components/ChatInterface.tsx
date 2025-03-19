@@ -1,3 +1,4 @@
+// src/components/ChatInterface.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBarcode } from '@/contexts/BarcodeContext';
@@ -9,14 +10,116 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import DOMPurify from 'dompurify';
+
+// HTML color modifier for dark theme
+const modifyHtmlForDarkTheme = (html: string): string => {
+  // Sanitize the HTML to prevent XSS attacks
+  const sanitizedHtml = DOMPurify.sanitize(html);
+  
+  // Create a temporary DOM element to modify the HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = sanitizedHtml;
+  
+  // Find all elements with style attributes
+  const elementsWithStyle = tempDiv.querySelectorAll('[style]');
+  
+  // Modify the styles for dark theme
+  elementsWithStyle.forEach(el => {
+    let style = el.getAttribute('style') || '';
+    
+    // Replace dark text colors with light colors
+    style = style.replace(/color:\s*#333/g, 'color: #e0e0e0');
+    style = style.replace(/color:\s*#2c3e50/g, 'color: #a0d8ef');
+    style = style.replace(/color:\s*black/g, 'color: #e0e0e0');
+    
+    // Set background colors if needed
+    if (el.tagName === 'DIV' && !style.includes('background')) {
+      style += '; background-color: rgba(30, 30, 40, 0.6); border-radius: 8px; padding: 12px;';
+    }
+    
+    // Update the style attribute
+    el.setAttribute('style', style);
+  });
+  
+  // Find all headings and make them more vibrant
+  const headings = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+  headings.forEach(heading => {
+    let style = heading.getAttribute('style') || '';
+    
+    // Replace heading colors with more vibrant colors
+    if (heading.tagName === 'H2') {
+      style = style.replace(/color:[^;]+/g, 'color: #a47bf8');
+      if (!style.includes('color:')) {
+        style += '; color: #a47bf8;';
+      }
+    } else if (heading.tagName === 'H3') {
+      style = style.replace(/color:[^;]+/g, 'color: #6ea3f7');
+      if (!style.includes('color:')) {
+        style += '; color: #6ea3f7;';
+      }
+    }
+    
+    heading.setAttribute('style', style);
+  });
+  
+  // Add custom styling for list items
+  const listItems = tempDiv.querySelectorAll('li');
+  listItems.forEach(li => {
+    let style = li.getAttribute('style') || '';
+    style += '; color: #e0e0e0; margin-bottom: 4px;';
+    li.setAttribute('style', style);
+  });
+  
+  return tempDiv.innerHTML;
+};
+
+const fixHtmlEncoding = (html: string): string => {
+  // Fix rupee symbol encoding
+  return html.replace(/â‚¹/g, '₹');
+};
+
+const processHtmlContent = (html: string): string => {
+  // First fix any encoding issues
+  let processedHtml = fixHtmlEncoding(html);
+  
+  // Create a temporary DOM element to modify the HTML
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = processedHtml;
+  
+  // Process all headings
+  const headings = tempDiv.querySelectorAll('h2, h3');
+  headings.forEach(heading => {
+    if (heading.tagName === 'H2') {
+      heading.style.color = '#00ff2f'; // Cyan color for h2
+    } else if (heading.tagName === 'H3') {
+      heading.style.color = '#a47bf8'; // Purple color for h3
+    }
+  });
+  
+  // Process all list items
+  const listItems = tempDiv.querySelectorAll('li');
+  listItems.forEach(item => {
+    item.style.color = 'rgba(255, 255, 255, 0.8)';
+  });
+  
+  // Process all paragraphs
+  const paragraphs = tempDiv.querySelectorAll('p');
+  paragraphs.forEach(para => {
+    para.style.color = 'rgba(255, 255, 255, 0.8)';
+  });
+  
+  return tempDiv.innerHTML;
+};
+
+
 const ChatInterface: React.FC = () => {
   const { barcodeId } = useParams<{ barcodeId: string }>();
-  const { messages, addMessage, activeBarcode, setActiveBarcode } = useBarcode();
+  const { messages, sendMessageToApi, activeBarcode, setActiveBarcode, isLoading } = useBarcode();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
-  const [isTyping, setIsTyping] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -52,45 +155,27 @@ const ChatInterface: React.FC = () => {
     }, 500);
   }, []);
 
-  // Mock response generator
-  const generateBotResponse = (userMessage: string) => {
-    setIsTyping(true);
-    
-    const responses = [
-      `I've received your message for table ${activeBarcode}. How can I assist you today?`,
-      "Thank you for your question. Your server will be with you shortly.",
-      "I've passed your request to the kitchen. Your order will be ready soon.",
-      "Would you like to see our specials for today?",
-      "Let me check on that for you. Is there anything else you need?",
-    ];
-    
-    // Hide suggestions after first message
-    if (showSuggestions) {
-      setShowSuggestions(false);
-    }
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
-  const handleSendMessage = (e: React.FormEvent | null, suggestedMessage?: string) => {
+  const handleSendMessage = async (e: React.FormEvent | null, suggestedMessage?: string) => {
     if (e) e.preventDefault();
     
     const messageToSend = suggestedMessage || input;
     if (!messageToSend.trim() || !activeBarcode) return;
-
-    // Add user message
-    addMessage(activeBarcode, messageToSend, 'user');
+    
+    // Clear input immediately for better UX
     setInput('');
-
-    // Simulate typing indicator
-    setIsTyping(true);
-
-    // Simulate bot response after a short delay
-    setTimeout(() => {
-      setIsTyping(false);
-      const botResponse = generateBotResponse(messageToSend);
-      addMessage(activeBarcode, botResponse, 'bot');
-    }, 1500);
+    
+    try {
+      // This will add the user message and then call the API
+      await sendMessageToApi(activeBarcode, messageToSend);
+      
+      // Hide suggestions after first message
+      if (showSuggestions) {
+        setShowSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error("Failed to get a response. Please try again.");
+    }
   };
 
   const handleBack = () => {
@@ -202,7 +287,15 @@ const ChatInterface: React.FC = () => {
                         : 'bg-zinc-800/70 backdrop-blur-sm border border-zinc-700/50 rounded-tl-none text-zinc-100'
                     }`}
                   >
-                    <p>{msg.content}</p>
+                    {/* Add this function to detect if content is HTML */}
+                    {msg.sender === 'bot' && msg.content.trim().startsWith('<') ? (
+                      <div 
+                        className="chat-html-content" 
+                        dangerouslySetInnerHTML={{ __html: fixHtmlEncoding(msg.content) }} 
+                      />
+                    ) : (
+                      <p>{msg.content}</p>
+                    )}
                     <div className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-purple-200/80' : 'text-zinc-400'}`}>
                       {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -212,7 +305,7 @@ const ChatInterface: React.FC = () => {
             ))}
             
             {/* Typing indicator */}
-            {isTyping && (
+            {isLoading && (
               <div className="flex justify-start message-appear">
                 <div className="flex items-start max-w-[85%] flex-row">
                   <Avatar className="h-8 w-8 mr-2 flex-shrink-0 bg-gradient-to-br from-blue-500 to-cyan-600 ring-2 ring-blue-500/20">
@@ -230,7 +323,7 @@ const ChatInterface: React.FC = () => {
             )}
             
             {/* Quick suggestions after messages */}
-            {showSuggestions && currentMessages.length > 0 && !isTyping && (
+            {showSuggestions && currentMessages.length > 0 && !isLoading && (
               <div className="mt-6 flex flex-wrap gap-2 justify-center fade-in-up">
                 {suggestions.map((suggestion, index) => (
                   <Button 
