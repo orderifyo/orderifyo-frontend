@@ -1,6 +1,6 @@
 // src/lib/api.ts
 // const API_URL = "http://localhost:8001"; // Update with your actual API URL in production
-const API_URL = "https://intelzeal.com/";
+const API_URL = "https://intelzeal.com";
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
