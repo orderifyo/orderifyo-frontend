@@ -1,3 +1,4 @@
+// src/pages/Index.tsx
 import React, { useEffect, useState } from "react";
 import BarcodeScanner from "@/components/BarcodeScanner";
 

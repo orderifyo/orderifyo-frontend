@@ -1,4 +1,4 @@
-
+// src/pages/ChatPage.tsx
 import ChatInterface from "@/components/ChatInterface";
 
 const ChatPage = () => {
